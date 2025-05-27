@@ -1,0 +1,112 @@
+###############################################################################
+#  Kafka 4.0.0 KRaft cluster – 3 brokers/controllers, no ZooKeeper            #
+#  Save as docker-compose.yml  ➜  docker compose up -d                        #
+###############################################################################
+
+name: kafka-kraft-cluster
+
+services:
+
+  ##########################################################################
+  # Broker / Controller 1
+  ##########################################################################
+  kafka1:
+    image: apache/kafka:4.0.0
+    container_name: kafka1
+    hostname: kafka1
+    ports:
+      - "19092:19092"                            # host → container EXTERNAL
+    environment:
+      CLUSTER_ID: dev-local-cluster              # same for every node in the cluster
+      KAFKA_NODE_ID: 1                           # unique for every node in the cluster
+      KAFKA_PROCESS_ROLES: broker,controller     # both broker and controller roles
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka1:9093,2@kafka2:9093,3@kafka3:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      # single-line listener values (no leading spaces!)
+      KAFKA_LISTENERS: INTERNAL://kafka1:9092,CONTROLLER://kafka1:9093,EXTERNAL://0.0.0.0:19092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka1:9092,EXTERNAL://localhost:19092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+
+      # sensible dev defaults
+      KAFKA_NUM_PARTITIONS: 3                 # default number of partitions for new topics
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3     # default replication factor for new topics
+      KAFKA_MIN_INSYNC_REPLICAS: 2            # minimum in-sync replicas for producer acknowledgments
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true" # auto-create topics when producing to non-existing topics
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_HEAP_OPTS: "-Xms512m -Xmx512m"    # JVM heap size for Kafka broker
+
+    volumes:
+      - kafka1-data:/var/lib/kafka/data       # persistent volume for Kafka data
+
+  ##########################################################################
+  # Broker / Controller 2
+  ##########################################################################
+  kafka2:
+    image: apache/kafka:4.0.0
+    container_name: kafka2
+    hostname: kafka2
+    depends_on:
+      - kafka1
+    ports:
+      - "29092:29092"
+    environment:
+      CLUSTER_ID: dev-local-cluster
+      KAFKA_NODE_ID: 2
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka1:9093,2@kafka2:9093,3@kafka3:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENERS: INTERNAL://kafka2:9092,CONTROLLER://kafka2:9093,EXTERNAL://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka2:9092,EXTERNAL://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_HEAP_OPTS: "-Xms512m -Xmx512m"
+    volumes:
+      - kafka2-data:/var/lib/kafka/data
+
+  ##########################################################################
+  # Broker / Controller 3
+  ##########################################################################
+  kafka3:
+    image: apache/kafka:4.0.0
+    container_name: kafka3
+    hostname: kafka3
+    depends_on:
+      - kafka1
+    ports:
+      - "39092:39092"
+    environment:
+      CLUSTER_ID: dev-local-cluster
+      KAFKA_NODE_ID: 3
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka1:9093,2@kafka2:9093,3@kafka3:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENERS: INTERNAL://kafka3:9092,CONTROLLER://kafka3:9093,EXTERNAL://0.0.0.0:39092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka3:9092,EXTERNAL://localhost:39092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_HEAP_OPTS: "-Xms512m -Xmx512m"
+    volumes:
+      - kafka3-data:/var/lib/kafka/data
+
+###############################################################################
+# Persistent volumes (one per broker)
+###############################################################################
+volumes:
+  kafka1-data:
+  kafka2-data:
+  kafka3-data:
